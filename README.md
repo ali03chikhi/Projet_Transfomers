@@ -48,9 +48,14 @@ Ce projet vise à **adapter le modèle Depth Anything** (un modèle pré-entraî
 
 ## 🧠 Architecture et Algorithmes
 
-### 1. Le Modèle Pré-entraîné : Depth Anything
+### 1. Le Modèle Pré-entraîné : Depth Anything V2
 
-**Depth Anything** est un modèle de fondation pour l'estimation de profondeur monoculaire développé par l'équipe de recherche TikTok. Il s'appuie sur l'architecture **DPT (Dense Prediction Transformer)** avec un backbone **Vision Transformer (ViT)**.
+**Depth Anything V2** est un modèle de fondation de pointe pour l'estimation de profondeur monoculaire. Il s'appuie sur une architecture **DPT (Dense Prediction Transformer)** propulsée par un encodeur **Vision Transformer (ViT)**. Cette architecture permet de capturer des relations globales dans l'image grâce au mécanisme d'attention, surpassant les CNNs classiques sur la préservation des détails fins.
+
+**Implémentation via Hugging Face :**
+Pour ce projet, nous n'avons pas téléchargé manuellement les poids depuis le dépôt GitHub officiel. Nous avons privilégié l'intégration native via la bibliothèque **Transformers** de Hugging Face.
+
+Le modèle est chargé dynamiquement depuis le **Hugging Face Hub** (ID : `depth-anything/Depth-Anything-V2-Small-hf`). Cette approche simplifie le pipeline (via `AutoModelForDepthEstimation`), assure la compatibilité des versions et évite la gestion complexe de fichiers de poids locaux.
 
 #### Architecture du Modèle
 
