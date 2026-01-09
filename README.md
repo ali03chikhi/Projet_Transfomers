@@ -13,10 +13,12 @@
 
 ## 👥 Auteurs
 
-| Nom                  | Rôle                    |
-| -------------------- | ------------------------ |
-| **Ali CHIKHI** | Développeur / Chercheur |
-| **ZEJLI**      | Développeur / Chercheur |
+| Nom                  |
+| -------------------- | 
+| **Ali Chikhi** | 
+| **Ayman Zejli**      | 
+| **Mouad Azenag**      | 
+| **Loic Magnan**      | 
 
 ---
 
@@ -156,39 +158,6 @@ DATASET_DEVOIR/
 | Écart-type                  | 295.35 mm           |
 | Pixels valides (moyenne)     | 68.5%               |
 
-#### Classe Dataset Personnalisée
-
-```python
-class ZividDepthDataset(Dataset):
-    def __init__(self, image_folder, depth_folder, image_files, depth_files, 
-                 processor, depth_min, depth_max):
-        # Initialisation des paramètres
-        self.depth_min = depth_min  # 251.74 mm
-        self.depth_max = depth_max  # 3907.45 mm
-  
-    def __getitem__(self, idx):
-        # 1. Charger l'image RGB
-        image = Image.open(img_path).convert('RGB')
-      
-        # 2. Charger le fichier depth XYZ
-        depth_xyz = np.load(depth_path)
-      
-        # 3. Extraire le canal Z (profondeur)
-        depth_z = depth_xyz[:, :, 2]  # Shape: (1200, 1944)
-      
-        # 4. Créer un masque des pixels valides (pour la loss)
-        valid_mask = ~np.isnan(depth_z)
-      
-        # 5. Normaliser la profondeur entre 0 et 1
-        depth_normalized = (depth_z_clean - self.depth_min) / (self.depth_max - self.depth_min)
-        depth_normalized = np.clip(depth_normalized, 0, 1)
-      
-        return {
-            'pixel_values': inputs['pixel_values'].squeeze(0),
-            'depth_gt': torch.from_numpy(depth_normalized).float(),
-            'valid_mask': torch.from_numpy(valid_mask).float(),
-        }
-```
 
 ### B. Configuration du Modèle et LoRA
 
@@ -335,47 +304,14 @@ Projet_Transfomers/
 
 ## 🚀 Guide de Reproduction
 
-### 1. Pré-requis Système
+### 1. Installation de l'Environnement
 
-| Composant          | Version Minimale   | Recommandé               |
-| ------------------ | ------------------ | ------------------------- |
-| **OS**       | Windows 10 / Linux | Windows 11 / Ubuntu 22.04 |
-| **Python**   | 3.10+              | 3.11                      |
-| **GPU**      | NVIDIA GTX 1080    | RTX 3080+ (8GB+ VRAM)     |
-| **CUDA**     | 11.8               | 12.2                      |
-| **RAM**      | 16 GB              | 32 GB                     |
-| **Stockage** | 10 GB libre        | SSD 20 GB                 |
-
-### 2. Installation de l'Environnement
-
-#### Option A : Installation avec Conda (Recommandé)
+#### Option A : Installation avec Conda 
 
 ```bash
 # Créer un environnement conda
 conda create -n transformers_depth python=3.11 -y
 conda activate transformers_depth
-
-# Installer PyTorch avec support CUDA
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu122
-
-# Installer les dépendances
-pip install -r requirements.txt
-```
-
-#### Option B : Installation avec venv
-
-```bash
-# Créer un environnement virtuel
-python -m venv venv
-
-# Activer l'environnement (Windows)
-.\venv\Scripts\activate
-
-# Activer l'environnement (Linux/Mac)
-source venv/bin/activate
-
-# Installer PyTorch avec support CUDA
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu122
 
 # Installer les dépendances
 pip install -r requirements.txt
@@ -473,5 +409,5 @@ Ce projet est réalisé dans le cadre d'un devoir académique. Tous droits rése
 ---
 
 <div align="center">
-  <sub>Fait avec ❤️ par Ali CHIKHI et ZEJLI</sub>
+  <sub>Projet Transformers - Polytech Clermont IMDS5A</sub>
 </div>
