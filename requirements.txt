@@ -1,0 +1,70 @@
+# =============================================================================
+#                    PROJET TRANSFORMERS - REQUIREMENTS
+# =============================================================================
+# Fichier de dépendances pour le projet de Fine-Tuning de modèles Transformers
+# pour l'estimation de profondeur (Depth Estimation)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+#                         PYTORCH ET DEEP LEARNING
+# -----------------------------------------------------------------------------
+# Note: Pour installer PyTorch avec support CUDA, utilisez la commande :
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu122
+python>=3.10
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+
+# -----------------------------------------------------------------------------
+#                         HUGGING FACE ECOSYSTEM
+# -----------------------------------------------------------------------------
+# Bibliothèques Hugging Face pour les modèles Transformers et l'optimisation
+
+transformers>=4.30.0         # Modèles pré-entraînés et fine-tuning
+huggingface-hub>=0.16.0      # Accès au Hub Hugging Face
+peft>=0.5.0                  # Parameter-Efficient Fine-Tuning (LoRA)
+accelerate>=0.20.0           # Accélération de l'entraînement
+
+# -----------------------------------------------------------------------------
+#                         TRAITEMENT D'IMAGES
+# -----------------------------------------------------------------------------
+
+opencv-python>=4.8.0         # Traitement d'images avec OpenCV
+Pillow>=10.0.0               # Manipulation d'images avec PIL
+
+# -----------------------------------------------------------------------------
+#                         CALCUL SCIENTIFIQUE
+# -----------------------------------------------------------------------------
+
+numpy>=1.24.0                # Calculs numériques
+pandas>=2.0.0                # Manipulation de données tabulaires
+scikit-learn>=1.3.0          # Outils de machine learning (train_test_split)
+
+# -----------------------------------------------------------------------------
+#                         VISUALISATION
+# -----------------------------------------------------------------------------
+
+matplotlib>=3.7.0            # Graphiques et visualisation
+tensorboard>=2.13.0          # Suivi des métriques d'entraînement
+
+# -----------------------------------------------------------------------------
+#                         UTILITAIRES
+# -----------------------------------------------------------------------------
+
+tqdm>=4.65.0                 # Barres de progression
+
+# =============================================================================
+#                         NOTES D'INSTALLATION
+# =============================================================================
+# 
+# 1. Installation standard :
+#    pip install -r requirements.txt
+#
+# 2. Installation avec support GPU CUDA (recommandé) :
+#    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu122
+#    pip install -r requirements.txt
+#
+# 3. Pour vérifier la compatibilité CUDA :
+#    python -c "import torch; print(f'CUDA disponible: {torch.cuda.is_available()}')"
+#
+# =============================================================================
