@@ -70,3 +70,168 @@ Chaque échantillon :
 - la GT profondeur = **canal Z** en **mm**
 
 Structure recommandée :
+DATASET_DEVOIR/
+├── images/ # Images RGB (.png)
+└── depth/ # Nuages de points XYZ (.npy)
+
+### Statistiques typiques (dataset fourni)
+- Nb total : **58** échantillons
+- Résolution brute : **1200 × 1944**
+- Profondeur min/max (mm) : **251.74** / **3907.45**
+
+---
+
+## 🔧 Prétraitement (version finale)
+
+### 1) Masque de validité (NaN / trous capteur)
+On construit un masque de pixels valides :
+- `Z` fini (pas NaN/inf)
+- `0 < Z < 10000` (filtrage valeurs aberrantes)
+Les pixels invalides sont remplacés par 0 pour stocker, mais **ignorés dans la loss**.
+
+### 2) Normalisation inverse (améliorer les objets proches)
+Au lieu de normaliser linéairement, on applique :
+
+\[
+z_{inv} = \frac{1}{z + \varepsilon}
+\]
+
+Avec :
+\[
+z_{min}^{inv} = \frac{1}{z_{max}},\quad z_{max}^{inv} = \frac{1}{z_{min}}
+\]
+\[
+z_{norm} = \mathrm{clip}\left(\frac{z_{inv}-z_{min}^{inv}}{z_{max}^{inv}-z_{min}^{inv}}, 0, 1\right)
+\]
+
+✅ Effet : les petites distances (objets proches) occupent une plage plus large → meilleurs détails.
+
+### 3) Haute résolution en entrée
+Dans le `Dataset`, le processor impose :
+- **height = 756**
+- **width = 1260**
+(choisi car multiple de 14, et bon compromis détails / mémoire)
+
+---
+
+## 🧾 Entraînement (version finale)
+
+### 1) Alignement des dimensions
+La sortie `predicted_depth` n’a pas forcément la taille de la GT.
+On **upsample** la prédiction vers la taille GT (1200×1944) via :
+
+- `F.interpolate(..., mode="bicubic", align_corners=False)`
+
+### 2) Loss : L1 masquée + loss de gradient (bords)
+
+#### a) L1 masquée
+Calculée uniquement sur les pixels valides :
+\[
+\mathcal{L}_{L1} = \frac{\sum M| \hat{d}-d |}{\sum M + \varepsilon}
+\]
+
+#### b) Loss de gradient (netteté des contours)
+On calcule des gradients par différences finies (x/y) et on applique :
+- un masque de validité voisinage (`mask_x`, `mask_y`)
+- une pondération plus forte sur les pixels “bords” :
+  - seuil `tau = 0.02`
+  - multiplicateur `+10` quand `|grad(GT)| > tau`
+
+Loss totale (version finale) :
+\[
+\mathcal{L} = \mathcal{L}_{L1} + 3.0 \cdot \mathcal{L}_{grad}
+\]
+
+### 3) Hyperparamètres (TrainingArguments)
+Configuration finale :
+- `num_train_epochs = 15`
+- `per_device_train_batch_size = 1` (obligatoire en haute résolution)
+- `gradient_accumulation_steps = 8` (batch effectif ≈ 8)
+- `learning_rate = 5e-5`
+- `fp16 = True`
+- `eval_strategy = "epoch"`
+- `save_strategy = "epoch"`
+- `load_best_model_at_end = True`
+- `output_dir = "./resultats_pneu_v5"` (ou équivalent)
+
+---
+
+## 🚀 Reproduire le projet
+
+### 1) Installation
+Option conda :
+```bash
+conda create -n depth_lora python=3.10 -y
+conda activate depth_lora
+pip install -r requirements.txt
+2) Préparer le dataset
+
+Place DATASET_DEVOIR/images et DATASET_DEVOIR/depth comme décrit plus haut.
+
+3) Lancer le notebook
+
+Ouvre le notebook principal (ex. transfomers_code.ipynb) et exécute les cellules dans l’ordre :
+
+imports / install
+
+lecture dataset + stats globales min/max
+
+création Dataset (use_inverse=True)
+
+chargement modèle + LoRA
+
+Trainer custom (loss L1 + gradient)
+
+entraînement + visualisation qualitative
+🧪 Inférence et dénormalisation (retour en mm)
+
+Après prédiction, si ta sortie est une profondeur normalisée inverse depth_norm dans [0,1] :
+import torch
+
+DEPTH_MIN = 251.74
+DEPTH_MAX = 3907.45
+
+depth_min_inv = 1.0 / DEPTH_MAX
+depth_max_inv = 1.0 / DEPTH_MIN
+
+# depth_norm : (H,W) en [0,1]
+depth_inv = depth_norm * (depth_max_inv - depth_min_inv) + depth_min_inv
+depth_mm = 1.0 / (depth_inv + 1e-6)
+⚠️ Si tu compares à la GT en mm : applique le masque (pixels valides uniquement).
+🧩 Arborescence
+Projet_Transformers/
+├── transfomers_code.ipynb              # Notebook final
+├── README.md
+├── requirements.txt
+├── DATASET_DEVOIR/
+│   ├── images/
+│   └── depth/
+└── resultats_pneu_v5/
+    ├── checkpoint-.../
+    └── ...
+🛠️ Dépannage rapide
+
+CUDA OOM (mémoire GPU) :
+
+garder batch_size=1
+
+augmenter gradient_accumulation_steps
+
+réduire la résolution (si nécessaire)
+
+Profondeur “pas parfaite” sur pneus :
+
+GT bruitée/incomplète
+
+pneus sombres/reflets → ambiguïtés monoculaires
+
+upsampling bicubique aide, mais les micro-détails restent difficiles
+📚 Références
+
+Depth Anything (arXiv): https://arxiv.org/abs/2401.10891
+
+LoRA (arXiv): https://arxiv.org/abs/2106.09685
+
+Transformers docs: https://huggingface.co/docs/transformers
+
+PEFT docs: https://huggingface.co/docs/peft
