@@ -90,19 +90,7 @@ On construit un masque de pixels valides :
 Les pixels invalides sont remplacés par 0 pour stocker, mais **ignorés dans la loss**.
 
 ### 2) Normalisation inverse (améliorer les objets proches)
-Au lieu de normaliser linéairement, on applique :
-
-\[
-z_{inv} = \frac{1}{z + \varepsilon}
-\]
-
-Avec :
-\[
-z_{min}^{inv} = \frac{1}{z_{max}},\quad z_{max}^{inv} = \frac{1}{z_{min}}
-\]
-\[
-z_{norm} = \mathrm{clip}\left(\frac{z_{inv}-z_{min}^{inv}}{z_{max}^{inv}-z_{min}^{inv}}, 0, 1\right)
-\]
+Au lieu de normaliser linéairement, on applique une normalisation inverse
 
 ✅ Effet : les petites distances (objets proches) occupent une plage plus large → meilleurs détails.
 
