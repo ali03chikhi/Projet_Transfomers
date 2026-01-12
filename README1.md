@@ -131,19 +131,74 @@ trainable params: 442,368 || all params: 25,227,457 || trainable%: 1.7535
 
 ---
 ## 🔧 Prétraitement 
+## 💻 Détails de l'Implémentation et Pipeline (Code)
 
-### 1) Masque de validité (NaN / trous capteur)
+### A. Pipeline de Données Custom (Dataset Zivid)
+
+Le jeu de données Zivid est un dataset industriel contenant des paires image RGB / profondeur XYZ capturées par une caméra Zivid.
+
+#### Structure des Fichiers
+
+```
+DATASET_DEVOIR/
+├── images/                    # Images RGB (.png)
+│   ├── 21-12-03-18-52-37_Zivid_acquisition_color.png
+│   ├── 22-09-21-14-12-11_Zivid_acquisition_color.png
+│   └── ...
+└── depth/                     # Cartes de profondeur XYZ (.npy)
+    ├── 21-12-03-18-52-37_Zivid_acquisition_rawDepth.npy
+    ├── 22-09-21-14-12-11_Zivid_acquisition_rawDepth.npy
+    └── ...
+```
+
+#### Statistiques du Dataset
+
+| Métrique                    | Valeur              |
+| ---------------------------- | ------------------- |
+| Nombre total d'échantillons | 58                  |
+| Résolution des images       | 1200 × 1944 pixels |
+| Profondeur MIN               | 251.74 mm           |
+| Profondeur MAX               | 3907.45 mm          |
+| Moyenne des profondeurs      | 1542.16 mm          |
+| Écart-type                  | 295.35 mm           |
+| Pixels valides (moyenne)     | 68.5%               |
+
+
+### B. Configuration du Modèle et LoRA
+
+```python
+from transformers import AutoModelForDepthEstimation, AutoImageProcessor
+from peft import get_peft_model, LoraConfig
+
+# 1. Chargement du modèle pré-entraîné
+MODEL_NAME = "LiheYoung/depth-anything-small-hf"
+base_model = AutoModelForDepthEstimation.from_pretrained(MODEL_NAME)
+image_processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
+
+# 2. Configuration LoRA
+lora_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    target_modules=["query", "key", "value"],
+    lora_dropout=0.05,
+    bias="none",
+)
+
+# 3. Application de LoRA
+model_lora = get_peft_model(base_model, lora_config)
+```
+# 4) Masque de validité (NaN / trous capteur)
 On construit un masque de pixels valides :
 - `Z` fini (pas NaN/inf)
 - `0 < Z < 10000` (filtrage valeurs aberrantes)
 Les pixels invalides sont remplacés par 0 pour stocker, mais **ignorés dans la loss**.
 
-### 2) Normalisation inverse (améliorer les objets proches)
+# 5) Normalisation inverse (améliorer les objets proches)
 Au lieu de normaliser linéairement, on applique une normalisation inverse
 
 ✅ Effet : les petites distances (objets proches) occupent une plage plus large → meilleurs détails.
 
-### 3) Haute résolution en entrée
+# 6) Haute résolution en entrée
 Dans le `Dataset`, le processor impose :
 - **height = 756**
 - **width = 1260**
@@ -151,7 +206,7 @@ Dans le `Dataset`, le processor impose :
 
 ---
 
-## 🧾 Entraînement (version finale)
+## 🧾 Entraînement 
 
 ### 1) Alignement des dimensions
 La sortie `predicted_depth` n’a pas forcément la taille de la GT.
