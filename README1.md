@@ -256,6 +256,7 @@ Option conda :
 conda create -n depth_lora python=3.10 -y
 conda activate depth_lora
 pip install -r requirements.txt
+```
 2) Préparer le dataset
 
 Place DATASET_DEVOIR/images et DATASET_DEVOIR/depth comme décrit plus haut.
