@@ -15,7 +15,7 @@
 
 | Nom                  |
 | -------------------- | 
-| **Ali Chikhi** | 
+| **Abdelali Chikhi** | 
 | **Ayman Zejli**      | 
 | **Mouad Azenag**      | 
 | **Loic Magnan**      | 
