@@ -256,29 +256,31 @@ Option conda :
 conda create -n depth_lora python=3.10 -y
 conda activate depth_lora
 pip install -r requirements.txt
-```
+
 2) Préparer le dataset
-
+```text
 Place DATASET_DEVOIR/images et DATASET_DEVOIR/depth comme décrit plus haut.
-
+```
 3) Lancer le notebook
-
+```text
 Ouvre le notebook principal (ex. transfomers_code.ipynb) et exécute les cellules dans l’ordre :
 
-imports / install
+1-imports / install
 
-lecture dataset + stats globales min/max
+2-lecture dataset + stats globales min/max
 
-création Dataset (use_inverse=True)
+3-création Dataset (use_inverse=True)
 
-chargement modèle + LoRA
+4-chargement modèle + LoRA
 
-Trainer custom (loss L1 + gradient)
+5-Trainer custom (loss L1 + gradient)
 
-entraînement + visualisation qualitative
+6-entraînement + visualisation qualitative
+```
 🧪 Inférence et dénormalisation (retour en mm)
 
 Après prédiction, si ta sortie est une profondeur normalisée inverse depth_norm dans [0,1] :
+```python
 import torch
 
 DEPTH_MIN = 251.74
@@ -290,8 +292,10 @@ depth_max_inv = 1.0 / DEPTH_MIN
 # depth_norm : (H,W) en [0,1]
 depth_inv = depth_norm * (depth_max_inv - depth_min_inv) + depth_min_inv
 depth_mm = 1.0 / (depth_inv + 1e-6)
+```
 ⚠️ Si tu compares à la GT en mm : applique le masque (pixels valides uniquement).
 🧩 Arborescence
+```text
 Projet_Transformers/
 ├── transfomers_code.ipynb              # Notebook final
 ├── README.md
@@ -302,23 +306,25 @@ Projet_Transformers/
 └── resultats_pneu_v5/
     ├── checkpoint-.../
     └── ...
+```
 🛠️ Dépannage rapide
 
 CUDA OOM (mémoire GPU) :
-
+```text
 garder batch_size=1
 
 augmenter gradient_accumulation_steps
 
 réduire la résolution (si nécessaire)
-
+```
 Profondeur “pas parfaite” sur pneus :
-
+```text
 GT bruitée/incomplète
 
 pneus sombres/reflets → ambiguïtés monoculaires
 
 upsampling bicubique aide, mais les micro-détails restent difficiles
+```
 📚 Références
 
 Depth Anything (arXiv): https://arxiv.org/abs/2401.10891
