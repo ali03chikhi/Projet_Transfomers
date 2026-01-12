@@ -1,11 +1,10 @@
-# 🎯 Projet Devoir : Fine-Tuning de Depth Anything V2 avec LoRA (Transformers)
+# 🎯 Projet Devoir : Fine-Tuning de Depth Anything avec LoRA
 
 <div align="center">
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
 ![HuggingFace](https://img.shields.io/badge/🤗_Transformers-4.30+-FFD21E?style=for-the-badge)
-![PEFT](https://img.shields.io/badge/PEFT-LoRA-6A5ACD?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 </div>
@@ -14,74 +13,124 @@
 
 ## 👥 Auteurs
 
-| Nom |
-| --- |
-| **Abdelali Chikhi** |
-| **Ayman Zejli** |
-| **Mouad Azennag** |
-| **Loic Magnan** |
+| Nom                  |
+| -------------------- | 
+| **Abdelali Chikhi** | 
+| **Ayman Zejli**      | 
+| **Mouad Azenag**      | 
+| **Loic Magnan**      | 
 
 ---
 
 ## 📖 Contexte et Objectif
 
-L’estimation de profondeur monoculaire (MDE) consiste à prédire une carte de profondeur dense à partir d’une seule image RGB.
+### Contexte
 
-**Objectif du projet :** adapter **Depth Anything V2** (Transformers) au dataset industriel **Zivid** (paires RGB + nuage de points XYZ par pixel) en utilisant **LoRA** (fine-tuning paramètre-efficiente).
+L'estimation de profondeur monoculaire est une tâche fondamentale en vision par ordinateur qui consiste à prédire la distance des objets dans une scène à partir d'une seule image RGB. Cette capacité est cruciale pour de nombreuses applications :
 
-🎯 Focus de la version finale : améliorer la précision sur les **objets proches** et les **détails fins** (ex. contours / rainures de pneus) grâce à :
-- une **normalisation inverse** de la profondeur,
-- une **loss mixte** : **L1 masquée + loss de gradient** (bords),
-- une entrée **haute résolution** et un **upsampling bicubique** vers la GT.
+- 🚗 **Véhicules autonomes** : Navigation et évitement d'obstacles
+- 🤖 **Robotique** : Manipulation d'objets et navigation
+- 🏭 **Industrie 4.0** : Contrôle qualité et inspection automatisée
+- 🎮 **Réalité augmentée** : Placement précis d'objets virtuels
 
----
+### Objectif du Projet
 
-## 🧠 Modèle & Méthode
+Ce projet vise à **adapter le modèle Depth Anything** (un modèle pré-entraîné de pointe pour l'estimation de profondeur) au **jeu de données Zivid** spécifique à un contexte industriel, en utilisant la technique de **LoRA (Low-Rank Adaptation)** pour un fine-tuning efficace.
 
-### 1) Modèle pré-entraîné : Depth Anything V2 (HF)
+#### Pourquoi LoRA ?
 
-- **Model ID (Hugging Face)** : `depth-anything/Depth-Anything-V2-Small-hf`
-- Chargement via Transformers :
-  - `AutoImageProcessor`
-  - `AutoModelForDepthEstimation`
-
-### 2) Fine-tuning LoRA (PEFT)
-
-LoRA apprend une mise à jour de rang faible :
-
-\[
-W' = W + \Delta W,\quad \Delta W = BA
-\]
-
-Configuration LoRA (version finale) :
-- `r = 16`
-- `lora_alpha = 32`
-- `target_modules = ["query","key","value"]`
-- `lora_dropout = 0.05`
-- `bias = "none"`
+- ✅ Réduction drastique des paramètres entraînables (~1.75% des paramètres totaux)
+- ✅ Préservation des connaissances du modèle pré-entraîné
+- ✅ Entraînement rapide avec moins de ressources GPU
+- ✅ Fusion facile des adaptateurs avec le modèle de base
 
 ---
 
-## 📂 Dataset Zivid & Structure attendue
+## 🧠 Architecture et Algorithmes
 
-Chaque échantillon :
-- une image RGB (`.png`)
-- un fichier profondeur (`.npy`) de shape `(H, W, 3)` contenant `(X, Y, Z)` par pixel
-- la GT profondeur = **canal Z** en **mm**
+### 1. Le Modèle Pré-entraîné : Depth Anything V2
 
-Structure recommandée :
-DATASET_DEVOIR/
-├── images/ # Images RGB (.png)
-└── depth/ # Nuages de points XYZ (.npy)
+**Depth Anything V2** est un modèle de fondation de pointe pour l'estimation de profondeur monoculaire. Il s'appuie sur une architecture **DPT (Dense Prediction Transformer)** propulsée par un encodeur **Vision Transformer (ViT)**. Cette architecture permet de capturer des relations globales dans l'image grâce au mécanisme d'attention, surpassant les CNNs classiques sur la préservation des détails fins.
 
-### Statistiques typiques (dataset fourni)
-- Nb total : **58** échantillons
-- Résolution brute : **1200 × 1944**
-- Profondeur min/max (mm) : **251.74** / **3907.45**
+**Implémentation via Hugging Face :**
+Pour ce projet, nous n'avons pas téléchargé manuellement les poids depuis le dépôt GitHub officiel. Nous avons privilégié l'intégration native via la bibliothèque **Transformers** de Hugging Face.
+
+Le modèle est chargé dynamiquement depuis le **Hugging Face Hub** (ID : `depth-anything/Depth-Anything-V2-Small-hf`). Cette approche simplifie le pipeline (via `AutoModelForDepthEstimation`), assure la compatibilité des versions et évite la gestion complexe de fichiers de poids locaux.
+
+#### Architecture du Modèle
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Depth Anything Small                      │
+├─────────────────────────────────────────────────────────────┤
+│  Input Image (H × W × 3)                                    │
+│         │                                                    │
+│         ▼                                                    │
+│  ┌─────────────────────────────────────────────────┐        │
+│  │         Vision Transformer (ViT) Backbone       │        │
+│  │  - Patch Embedding (16 × 16 patches)            │        │
+│  │  - Multi-Head Self-Attention (Query, Key, Value)│        │
+│  │  - Feed-Forward Networks                        │        │
+│  └─────────────────────────────────────────────────┘        │
+│         │                                                    │
+│         ▼                                                    │
+│  ┌─────────────────────────────────────────────────┐        │
+│  │              DPT Decoder Head                   │        │
+│  │  - Feature Reassembly                           │        │
+│  │  - Progressive Upsampling                       │        │
+│  └─────────────────────────────────────────────────┘        │
+│         │                                                    │
+│         ▼                                                    │
+│  Output Depth Map (H × W × 1)                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Caractéristiques Clés
+
+- **Modèle utilisé** : `LiheYoung/depth-anything-small-hf`
+- **Paramètres totaux** : ~25.2 millions
+- **Résolution d'entrée** : 518 × 840 pixels (adaptée aux images Zivid)
+- **Sortie** : Carte de profondeur normalisée [0, 1]
+
+### 2. L'Algorithme de Fine-Tuning : LoRA (Low-Rank Adaptation)
+
+**LoRA** est une technique de fine-tuning efficace qui permet d'adapter de grands modèles pré-entraînés sans modifier leurs poids originaux.
+
+#### Principe Mathématique
+
+Au lieu de mettre à jour les poids $W$ directement, LoRA décompose la mise à jour en deux matrices de faible rang :
+
+$$
+W_{new} = W_{original} + \Delta W = W_{original} + B \cdot A
+$$
+
+Où :
+
+- $W_{original} \in \mathbb{R}^{d \times k}$ : Poids gelés du modèle original
+- $A \in \mathbb{R}^{r \times k}$ : Matrice "down-projection" (compresse)
+- $B \in \mathbb{R}^{d \times r}$ : Matrice "up-projection" (décompresse)
+- $r$ : Rang (hyperparamètre, $r \ll \min(d, k)$)
+
+#### Configuration LoRA Utilisée
+
+```python
+lora_config = LoraConfig(
+    r=16,                                    # Rang de la décomposition
+    lora_alpha=32,                           # Facteur d'échelle (α/r)
+    target_modules=["query", "key", "value"],# Couches d'attention ciblées
+    lora_dropout=0.05,                       # Régularisation
+    bias="none",                             # Pas d'adaptation des biais
+)
+```
+
+#### Statistiques d'Entraînement
+
+```
+trainable params: 442,368 || all params: 25,227,457 || trainable%: 1.7535
+```
 
 ---
-
-## 🔧 Prétraitement (version finale)
+## 🔧 Prétraitement 
 
 ### 1) Masque de validité (NaN / trous capteur)
 On construit un masque de pixels valides :
